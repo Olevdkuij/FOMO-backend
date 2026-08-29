@@ -4,10 +4,13 @@ const venueSchema = new mongoose.Schema({
   _id: { type: String },
   name: String,
   area: String,
+  address: String,
   type: String,
   genres: [String],
   rating: Number,
   image: String,
+  lat: Number,
+  lng: Number,
   crowdStatus: { type: String, enum: ['quiet', 'getting_busy', 'busy', 'packed'], default: 'quiet' },
   crowdUpdatedAt: { type: Date, default: Date.now },
   ratings: {
@@ -15,7 +18,9 @@ const venueSchema = new mongoose.Schema({
   },
   bestNights: [{ day: String, stars: Number }],
   bestArrival: String,
+  opening: String,
   closing: String,
+  dressCode: String,
   verified: Boolean,
 }, { _id: false });
 

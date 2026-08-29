@@ -1,0 +1,24 @@
+# Render "Blueprint" — lets Render create this service automatically from
+# render.yaml when you connect the repo, instead of clicking through the
+# New Web Service form by hand. See DEPLOYMENT.md for the full walkthrough.
+services:
+  - type: web
+    name: fomo-backend
+    runtime: node
+    plan: free
+    branch: main
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      # Set these in the Render dashboard instead of here — they're secrets
+      # and shouldn't be committed to the repo:
+      #   MONGODB_URI
+      #   JWT_SECRET
+      #   EMAIL_USER
+      #   EMAIL_APP_PASSWORD
+      #   ALLOWED_ORIGINS (optional — see DEPLOYMENT.md)
