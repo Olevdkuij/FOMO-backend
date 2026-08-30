@@ -21,6 +21,22 @@ const router = express.Router();
 let cachedKey = null;
 function getPrivateKey() {
   if (cachedKey) return cachedKey;
+
+  // Preferred: MAPKIT_KEY_BASE64, a single-line base64 encoding of the .p8
+  // file's exact bytes. A multi-line PEM pasted through a browser textarea
+  // (Render's Secret Files editor) is easy to corrupt — line breaks or
+  // whitespace get mangled in transit — which surfaces as a cryptic
+  // "secretOrPrivateKey must be an asymmetric key" error from jsonwebtoken.
+  // Base64 is a single unbroken line, so there's nothing for a text field
+  // to mangle. Generate it with:
+  //   base64 -i AuthKey_<KeyID>.p8 | tr -d '\n'
+  if (process.env.MAPKIT_KEY_BASE64) {
+    cachedKey = Buffer.from(process.env.MAPKIT_KEY_BASE64, 'base64').toString('utf8');
+    return cachedKey;
+  }
+
+  // Fallback: a file path (e.g. Render Secret File, or the local secrets/
+  // folder in dev).
   const keyPath = process.env.MAPKIT_KEY_PATH
     || path.join(__dirname, '..', '..', 'secrets', `AuthKey_${process.env.MAPKIT_KEY_ID}.p8`);
   cachedKey = fs.readFileSync(keyPath, 'utf8');
