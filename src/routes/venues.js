@@ -1,6 +1,7 @@
 const express = require('express');
 const Venue = require('../models/Venue');
 const Review = require('../models/Review');
+const { requireSyncSecret } = require('../middleware/syncAuth');
 
 const router = express.Router();
 
@@ -14,6 +15,47 @@ function serializeVenue(v) {
 router.get('/', async (req, res) => {
   const venues = await Venue.find();
   res.json(venues.map(serializeVenue));
+});
+
+// POST /api/venues/sync — adds or updates venues by id. Same shared-secret
+// pattern as /api/marbella-events/sync, but additive-only (upsert, no
+// pruning): the venue directory is a small curated set maintained by hand,
+// not a rotating calendar, so a sync here should never be able to silently
+// delete an existing venue just because it wasn't in this particular
+// payload. Body: { venues: [ ... same shape as seed.js's venue objects ... ] }
+router.post('/sync', requireSyncSecret, async (req, res) => {
+  const venues = Array.isArray(req.body.venues) ? req.body.venues : [];
+  let synced = 0;
+  for (const v of venues) {
+    if (!v.id && !v._id) continue; // skip malformed entries rather than failing the whole sync
+    const _id = v.id || v._id;
+    await Venue.findByIdAndUpdate(
+      _id,
+      {
+        _id,
+        name: v.name,
+        area: v.area,
+        address: v.address,
+        type: v.type,
+        genres: v.genres,
+        rating: v.rating,
+        image: v.image,
+        lat: v.lat,
+        lng: v.lng,
+        crowdStatus: v.crowdStatus || 'quiet',
+        ratings: v.ratings,
+        bestNights: v.bestNights,
+        bestArrival: v.bestArrival,
+        opening: v.opening,
+        closing: v.closing,
+        dressCode: v.dressCode,
+        verified: v.verified,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    synced++;
+  }
+  res.json({ ok: true, venues_synced: synced });
 });
 
 // GET /api/venues/:id

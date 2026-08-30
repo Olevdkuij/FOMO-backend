@@ -1,0 +1,23 @@
+{
+  "venues": [
+    {
+      "id": "v-lasiesta",
+      "name": "La Siesta",
+      "area": "Puerto Banús",
+      "address": "Avenida de Lola Flores, s/n, 29660 Marbella, Málaga, Spain",
+      "type": "Beach Club",
+      "genres": ["House", "Afro House"],
+      "rating": 4.8,
+      "image": "/images/venues/la-siesta.jpg",
+      "lat": 36.4851537,
+      "lng": -4.9576323,
+      "crowdStatus": "getting_busy",
+      "ratings": { "music": 4.7, "atmosphere": 4.8, "crowd": 4.6, "staff": 4.3, "drinks": 4.4, "venue": 4.6 },
+      "bestNights": [{ "day": "Saturday", "stars": 5 }, { "day": "Sunday", "stars": 4 }, { "day": "Friday", "stars": 3 }],
+      "bestArrival": "18:00–19:00",
+      "closing": "00:00",
+      "dressCode": "Beach chic — come as you are",
+      "verified": true
+    }
+  ]
+}
