@@ -56,8 +56,12 @@ router.post('/sync', requireSyncSecret, async (req, res) => {
     );
   }
   const keepIds = events.map((e) => e.id).filter(Boolean);
+  // Only prune upcoming/today events that dropped out of this sync — past
+  // events are kept forever so the calendar stays browsable in both
+  // directions (see GET / below).
   await MarbellaEvent.deleteMany({
-    $or: [{ date: { $lt: todayStr() } }, { _id: { $nin: keepIds } }],
+    date: { $gte: todayStr() },
+    _id: { $nin: keepIds },
   });
 
   // recurring_nights / watchlist / instagram_leads carry no stable id in the
@@ -128,7 +132,9 @@ router.post('/sync', requireSyncSecret, async (req, res) => {
 // "What's On" screen.
 router.get('/', async (req, res) => {
   const [events, recurringNights, watchlist, instagramLeads] = await Promise.all([
-    MarbellaEvent.find({ date: { $gte: todayStr() } }).sort({ date: 1 }),
+    // No date filter — past events are kept so the app can show what
+    // already happened on a given night, not just what's upcoming.
+    MarbellaEvent.find({}).sort({ date: 1 }),
     RecurringNight.find().sort({ dayOfWeek: 1 }),
     MarbellaWatchlistEntry.find().sort({ venue: 1 }),
     InstagramLead.find({ $or: [{ claimedDate: null }, { claimedDate: { $gte: todayStr() } }] }).sort({ foundAt: -1 }),
