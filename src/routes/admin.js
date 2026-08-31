@@ -1,4 +1,5 @@
 const express = require('express');
+const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Follow = require('../models/Follow');
 const Post = require('../models/Post');
@@ -89,6 +90,28 @@ router.delete('/users/:id', async (req, res) => {
       reportsFiled, partiesHosted,
     },
   });
+});
+
+// POST /api/admin/users/:id/reset-password — manually set someone's password,
+// bypassing email entirely. Stopgap for while Resend is still in
+// unverified-domain mode (it can only email the account owner's own
+// address, so anyone else who forgets their password can't self-serve yet).
+// { newPassword: string }
+router.post('/users/:id/reset-password', async (req, res) => {
+  const { id } = req.params;
+  const { newPassword } = req.body || {};
+  if (!newPassword || newPassword.length < 6) {
+    return res.status(400).json({ error: 'newPassword is required and must be at least 6 characters' });
+  }
+  const user = await User.findById(id);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+
+  user.passwordHash = await bcrypt.hash(newPassword, 10);
+  user.resetCodeHash = null;
+  user.resetCodeExpires = null;
+  await user.save();
+
+  res.json({ ok: true, id: user._id, email: user.email });
 });
 
 module.exports = router;
