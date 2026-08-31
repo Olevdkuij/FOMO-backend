@@ -19,6 +19,6 @@ services:
       # and shouldn't be committed to the repo:
       #   MONGODB_URI
       #   JWT_SECRET
-      #   EMAIL_USER
-      #   EMAIL_APP_PASSWORD
+      #   RESEND_API_KEY (email delivery for password resets)
+      #   RESEND_FROM_EMAIL (optional, defaults to Resend's shared onboarding@resend.dev sender)
       #   ALLOWED_ORIGINS (optional — see DEPLOYMENT.md)

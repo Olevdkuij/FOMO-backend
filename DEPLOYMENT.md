@@ -47,8 +47,13 @@ those — the steps are similar, just skip the render.yaml blueprint part.
    - `JWT_SECRET` — any long random string (e.g. run
      `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
      and use the output)
-   - `EMAIL_USER` / `EMAIL_APP_PASSWORD` — same Gmail app-password setup
-     your local `.env` uses, for password-reset emails
+   - `RESEND_API_KEY` — password-reset emails go through [Resend](https://resend.com)
+     (a free API key covers 3,000 emails/month). Gmail SMTP doesn't work here —
+     Render blocks outbound SMTP ports, so that approach just hangs. Sign up,
+     grab an API key from the dashboard, and set it here. `RESEND_FROM_EMAIL`
+     is optional — without it, email sends from Resend's shared
+     `onboarding@resend.dev` address, which works immediately with no domain
+     setup.
 4. Deploy. Render gives you a URL like `https://fomo-backend.onrender.com`.
    Visit `https://fomo-backend.onrender.com/health` — it should return
    `{"status":"ok","mongoConnected":true}`. If `mongoConnected` is false,
