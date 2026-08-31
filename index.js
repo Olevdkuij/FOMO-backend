@@ -46,7 +46,7 @@ app.use(cors({
   },
 }));
 app.use(securityHeaders);
-app.use(express.json({ limit: '15mb' })); // posts/drops/party photos travel as base64 data URLs
+app.use(express.json({ limit: '30mb' })); // posts/drops/party photos travel as base64 data URLs (matches MAX_VIDEO_BYTES in the frontend's utils/media.ts)
 
 app.get('/', (req, res) => {
   res.send('FOMO backend is running');
