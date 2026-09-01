@@ -19,6 +19,8 @@ const partySchema = new mongoose.Schema({
   photo: String,
   photoPosition: String,
   endTime: String,
+  // Linked group chat, auto-created alongside the party — see routes/parties.js.
+  conversationId: { type: String, default: null },
 }, { _id: false, timestamps: true });
 
 module.exports = mongoose.model('Party', partySchema);

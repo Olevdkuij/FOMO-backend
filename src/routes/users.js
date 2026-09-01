@@ -39,4 +39,26 @@ router.get('/:id', requireAuth, async (req, res) => {
   res.json({ ...publicUser(user), followerCount, followingCount });
 });
 
+
+// POST /api/users/me/device-token — register this device for real push
+// notifications (lock-screen alerts). Body: { token }. Idempotent — safe to
+// call on every app launch. Requires @capacitor/push-notifications on the
+// frontend plus the Apple Developer / Xcode push capability setup described
+// in DEPLOYMENT.md; harmless no-op infrastructure-wise until that's done.
+router.post('/me/device-token', requireAuth, async (req, res) => {
+  const { token } = req.body || {};
+  if (!token || typeof token !== 'string') return res.status(400).json({ error: 'token is required' });
+  await User.updateOne({ _id: req.userId }, { $addToSet: { deviceTokens: token } });
+  res.json({ ok: true });
+});
+
+// DELETE /api/users/me/device-token — unregister a device (e.g. on logout)
+// so a signed-out phone stops receiving pushes meant for this account.
+router.delete('/me/device-token', requireAuth, async (req, res) => {
+  const { token } = req.body || {};
+  if (!token || typeof token !== 'string') return res.status(400).json({ error: 'token is required' });
+  await User.updateOne({ _id: req.userId }, { $pull: { deviceTokens: token } });
+  res.json({ ok: true });
+});
+
 module.exports = router;

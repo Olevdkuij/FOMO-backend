@@ -28,6 +28,9 @@ const userSchema = new mongoose.Schema(
       reviews: { type: Number, default: 0 },
     },
     favouriteVenueIds: { type: [String], default: [] },
+    // Registered APNs device tokens for real push notifications (lock-screen
+    // alerts) — a person can have more than one (old phone + new phone).
+    deviceTokens: { type: [String], default: [] },
     verified: { type: Boolean, default: false },
     resetCodeHash: { type: String, default: null },
     resetCodeExpires: { type: Date, default: null },

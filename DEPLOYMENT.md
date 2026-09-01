@@ -91,3 +91,33 @@ open until then. Native app requests (from the Capacitor/iOS app) aren't
 affected either way — CORS only applies to requests made from a browser
 page, and there isn't one yet. Leave `ALLOWED_ORIGINS` unset for now; if
 you ever add a companion website, set it there to that site's URL.
+
+## 6. Push notifications (APNs, optional)
+
+The "who's going out tonight" feature sends a real push notification to
+everyone in a group chat. It's built and wired up, but stays silent (falls
+back to a console log) until these are set — safe to skip for now and add
+later.
+
+- `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_AUTH_KEY` — from the
+  [Apple Developer Portal](https://developer.apple.com/account): under
+  Certificates, Identifiers & Profiles > Keys, create a new key with the
+  "Apple Push Notifications service (APNs)" capability enabled, then
+  download the `.p8` file — you only get one chance to download it. The
+  key's ID (shown on the Keys page) is `APNS_KEY_ID`. Your Team ID (top
+  right of the Developer Portal, or under Membership) is `APNS_TEAM_ID`.
+  Open the `.p8` file and paste its full contents as `APNS_AUTH_KEY` — since
+  Render's dashboard can't store real multi-line values cleanly, replace
+  each line break with a literal `\n` (the backend un-escapes it
+  automatically).
+- `APNS_BUNDLE_ID` — the app's existing bundle identifier (the same one
+  Xcode uses to build and sign the app).
+- `APNS_ENV` — optional, defaults to production (`api.push.apple.com`).
+  Set to `sandbox` to send through Apple's sandbox APNs server instead
+  (`api.sandbox.push.apple.com`), which is what a debug/development build
+  installed from Xcode actually receives pushes through.
+
+The Capacitor push-notification plugin and the iOS entitlements it needs
+still have to be added on your end (a `pod install` from a real Xcode
+project) before device tokens exist to send to — this section only covers
+the server side.

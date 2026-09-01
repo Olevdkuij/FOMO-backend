@@ -1,5 +1,6 @@
 const express = require('express');
 const Party = require('../models/Party');
+const Conversation = require('../models/Conversation');
 const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -27,6 +28,15 @@ router.post('/', requireAuth, async (req, res) => {
       _id: id, hostId: req.userId, name, date, time, endTime, location, lat, lng, description, music, dressCode,
       privacy, maxPeople, invitedIds, photo, photoPosition, goingIds: [req.userId],
     });
+    // Every community party gets its own group chat, created right
+    // alongside it (host-only to start) — people land in it automatically
+    // as they RSVP going (see /:id/join below), rather than the host having
+    // to build the group by hand afterward.
+    const conversation = await Conversation.create({
+      _id: `convo-party-${id}`, type: 'group', name: party.name, memberIds: [req.userId], partyId: id,
+    });
+    party.conversationId = conversation._id;
+    await party.save();
     res.status(201).json(serialize(party));
   } catch (err) {
     if (err && err.code === 11000) return res.status(409).json({ error: 'Party already exists' });
@@ -58,15 +68,22 @@ router.delete('/:id', requireAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
-// POST /api/parties/:id/join — toggle the logged-in user's RSVP
+// POST /api/parties/:id/join — toggle the logged-in user's RSVP. Marking
+// yourself going also folds you into the party's linked group chat
+// (un-marking does NOT remove you — leaving a chat is a separate,
+// deliberate action, not an automatic side effect of an RSVP toggle).
 router.post('/:id/join', requireAuth, async (req, res) => {
   const party = await Party.findOne({ _id: req.params.id });
   if (!party) return res.status(404).json({ error: 'Party not found' });
-  const going = party.goingIds.includes(req.userId)
+  const wasGoing = party.goingIds.includes(req.userId);
+  const going = wasGoing
     ? party.goingIds.filter((id) => id !== req.userId)
     : [...party.goingIds, req.userId];
   party.goingIds = going;
   await party.save();
+  if (!wasGoing && party.conversationId) {
+    await Conversation.updateOne({ _id: party.conversationId }, { $addToSet: { memberIds: req.userId } });
+  }
   res.json(serialize(party));
 });
 

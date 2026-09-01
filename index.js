@@ -17,6 +17,7 @@ const blocksRouter = require('./src/routes/blocks');
 const marbellaEventsRouter = require('./src/routes/marbellaEvents');
 const mapkitTokenRouter = require('./src/routes/mapkitToken');
 const adminRouter = require('./src/routes/admin');
+const conversationsRouter = require('./src/routes/conversations');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -75,6 +76,7 @@ app.use('/api/blocks', blocksRouter);
 app.use('/api/marbella-events', marbellaEventsRouter);
 app.use('/api/mapkit-token', mapkitTokenRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/conversations', conversationsRouter);
 
 // Anything under /api that didn't match a route above.
 app.use('/api', (req, res) => {
