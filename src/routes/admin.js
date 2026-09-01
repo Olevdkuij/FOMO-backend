@@ -8,6 +8,9 @@ const Notification = require('../models/Notification');
 const Block = require('../models/Block');
 const Report = require('../models/Report');
 const Party = require('../models/Party');
+const RecurringNight = require('../models/RecurringNight');
+const MarbellaWatchlistEntry = require('../models/MarbellaWatchlistEntry');
+const InstagramLead = require('../models/InstagramLead');
 const { requireSyncSecret } = require('../middleware/syncAuth');
 
 const router = express.Router();
@@ -112,6 +115,32 @@ router.post('/users/:id/reset-password', async (req, res) => {
   await user.save();
 
   res.json({ ok: true, id: user._id, email: user.email });
+});
+
+
+// One-off cleanup: RecurringNight/MarbellaWatchlistEntry/InstagramLead
+// documents created before the `city` field existed on those schemas never
+// got it written to disk (Mongoose only applies the schema default when
+// *reading* a doc that's missing the field, not when matching a query
+// filter against it) — so a city-scoped sync's deleteMany({city}) silently
+// matched nothing for them, and insertMany then added a second, correctly-
+// tagged copy alongside the untouched originals, doubling all three
+// collections. This deletes the ones missing a stored `city` field
+// entirely. Safe today because every pre-existing document in these three
+// collections is implicitly Marbella-only (Málaga has never had recurring
+// nights/watchlist/leads synced), so nothing needs a city check here.
+router.post('/purge-legacy-nocity', async (req, res) => {
+  const [rn, wl, leads] = await Promise.all([
+    RecurringNight.deleteMany({ city: { $exists: false } }),
+    MarbellaWatchlistEntry.deleteMany({ city: { $exists: false } }),
+    InstagramLead.deleteMany({ city: { $exists: false } }),
+  ]);
+  res.json({
+    ok: true,
+    recurring_nights_deleted: rn.deletedCount,
+    watchlist_deleted: wl.deletedCount,
+    instagram_leads_deleted: leads.deletedCount,
+  });
 });
 
 module.exports = router;
