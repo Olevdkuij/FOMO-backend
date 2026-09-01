@@ -11,9 +11,12 @@ function serializeVenue(v) {
   return { ...obj, id: obj._id, crowdUpdatedMinsAgo: minsAgo };
 }
 
-// GET /api/venues
+// GET /api/venues — optional ?city= filter (e.g. ?city=Málaga). Omit to get
+// every venue across all cities.
 router.get('/', async (req, res) => {
-  const venues = await Venue.find();
+  const filter = {};
+  if (req.query.city) filter.city = req.query.city;
+  const venues = await Venue.find(filter);
   res.json(venues.map(serializeVenue));
 });
 
@@ -33,6 +36,7 @@ router.post('/sync', requireSyncSecret, async (req, res) => {
       _id,
       {
         _id,
+        city: v.city || 'Marbella',
         name: v.name,
         area: v.area,
         address: v.address,

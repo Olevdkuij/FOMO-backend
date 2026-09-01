@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 // club names its summer headliners before releasing specific dates).
 // Replaced wholesale on every sync, same reasoning as RecurringNight.
 const watchlistSchema = new mongoose.Schema({
+  city: { type: String, default: 'Marbella' },
   venue: { type: String, required: true },
   venueArea: String,
   seriesName: String,

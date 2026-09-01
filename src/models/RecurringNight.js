@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 // id for these, so the whole collection is replaced wholesale on every sync
 // rather than upserted — see routes/marbellaEvents.js.
 const recurringNightSchema = new mongoose.Schema({
+  city: { type: String, default: 'Marbella' },
   venue: { type: String, required: true },
   venueArea: String,
   address: String,

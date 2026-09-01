@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 // keep them out of the confirmed-events list. Replaced wholesale on every
 // sync, same reasoning as RecurringNight.
 const instagramLeadSchema = new mongoose.Schema({
+  city: { type: String, default: 'Marbella' },
   venue: { type: String, required: true },
   claimedDate: String,
   claimedDjOrEvent: String,

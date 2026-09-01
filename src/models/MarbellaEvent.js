@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 // re-syncing the same dataset update events in place instead of duplicating.
 const marbellaEventSchema = new mongoose.Schema({
   _id: { type: String },
+  city: { type: String, default: 'Marbella' }, // which city this event belongs to
   date: { type: String, required: true }, // "YYYY-MM-DD"
   dayOfWeek: String,
   startTime: String, // "HH:MM" or absent

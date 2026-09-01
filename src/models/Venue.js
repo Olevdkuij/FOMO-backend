@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const venueSchema = new mongoose.Schema({
   _id: { type: String },
+  city: { type: String, default: 'Marbella' }, // which city this venue belongs to (e.g. 'Marbella', 'Málaga')
   name: String,
   area: String,
   address: String,

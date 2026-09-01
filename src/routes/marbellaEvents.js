@@ -18,6 +18,12 @@ function todayStr() {
 // this endpoint is never called on a schedule from inside this app.
 router.post('/sync', requireSyncSecret, async (req, res) => {
   const payload = req.body || {};
+  // Which city this sync's data belongs to — defaults to Marbella so the
+  // existing automated pipeline (which doesn't send this field) keeps
+  // working unchanged. Scoping every destructive operation below by city is
+  // what lets Málaga syncs run without ever touching Marbella's data, and
+  // vice versa.
+  const city = payload.city || 'Marbella';
 
   // events: upsert by the pipeline's stable id, then prune anything that's
   // either gone stale (date in the past) or wasn't part of this sync (no
@@ -30,6 +36,7 @@ router.post('/sync', requireSyncSecret, async (req, res) => {
       e.id,
       {
         _id: e.id,
+        city,
         date: e.date,
         dayOfWeek: e.day_of_week || undefined,
         startTime: e.start_time || undefined,
@@ -60,6 +67,7 @@ router.post('/sync', requireSyncSecret, async (req, res) => {
   // events are kept forever so the calendar stays browsable in both
   // directions (see GET / below).
   await MarbellaEvent.deleteMany({
+    city,
     date: { $gte: todayStr() },
     _id: { $nin: keepIds },
   });
@@ -69,9 +77,10 @@ router.post('/sync', requireSyncSecret, async (req, res) => {
   // manually-verified snapshot rather than an incremental diff — so the
   // simplest correct thing is to replace each collection wholesale.
   const recurringNights = Array.isArray(payload.recurring_nights) ? payload.recurring_nights : [];
-  await RecurringNight.deleteMany({});
+  await RecurringNight.deleteMany({ city });
   if (recurringNights.length) {
     await RecurringNight.insertMany(recurringNights.map((r) => ({
+      city,
       venue: r.venue,
       venueArea: r.venue_area || undefined,
       address: r.address || undefined,
@@ -90,9 +99,10 @@ router.post('/sync', requireSyncSecret, async (req, res) => {
   }
 
   const watchlist = Array.isArray(payload.watchlist) ? payload.watchlist : [];
-  await MarbellaWatchlistEntry.deleteMany({});
+  await MarbellaWatchlistEntry.deleteMany({ city });
   if (watchlist.length) {
     await MarbellaWatchlistEntry.insertMany(watchlist.map((w) => ({
+      city,
       venue: w.venue,
       venueArea: w.venue_area || undefined,
       seriesName: w.series_name || undefined,
@@ -105,9 +115,10 @@ router.post('/sync', requireSyncSecret, async (req, res) => {
   }
 
   const instagramLeads = Array.isArray(payload.instagram_leads) ? payload.instagram_leads : [];
-  await InstagramLead.deleteMany({});
+  await InstagramLead.deleteMany({ city });
   if (instagramLeads.length) {
     await InstagramLead.insertMany(instagramLeads.map((l) => ({
+      city,
       venue: l.venue,
       claimedDate: l.claimed_date || undefined,
       claimedDjOrEvent: l.claimed_dj_or_event || undefined,
@@ -120,6 +131,7 @@ router.post('/sync', requireSyncSecret, async (req, res) => {
 
   res.json({
     ok: true,
+    city,
     events_synced: events.length,
     recurring_nights_synced: recurringNights.length,
     watchlist_synced: watchlist.length,
@@ -131,13 +143,16 @@ router.post('/sync', requireSyncSecret, async (req, res) => {
 // GET /api/marbella-events — public, like /api/venues. Powers the app's
 // "What's On" screen.
 router.get('/', async (req, res) => {
+  // Optional ?city= filter (e.g. ?city=Málaga). Omit to get every city's
+  // data combined.
+  const cityFilter = req.query.city ? { city: req.query.city } : {};
   const [events, recurringNights, watchlist, instagramLeads] = await Promise.all([
     // No date filter — past events are kept so the app can show what
     // already happened on a given night, not just what's upcoming.
-    MarbellaEvent.find({}).sort({ date: 1 }),
-    RecurringNight.find().sort({ dayOfWeek: 1 }),
-    MarbellaWatchlistEntry.find().sort({ venue: 1 }),
-    InstagramLead.find({ $or: [{ claimedDate: null }, { claimedDate: { $gte: todayStr() } }] }).sort({ foundAt: -1 }),
+    MarbellaEvent.find(cityFilter).sort({ date: 1 }),
+    RecurringNight.find(cityFilter).sort({ dayOfWeek: 1 }),
+    MarbellaWatchlistEntry.find(cityFilter).sort({ venue: 1 }),
+    InstagramLead.find({ ...cityFilter, $or: [{ claimedDate: null }, { claimedDate: { $gte: todayStr() } }] }).sort({ foundAt: -1 }),
   ]);
   res.json({
     events: events.map((e) => ({ ...e.toObject(), id: e._id })),
