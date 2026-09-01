@@ -7,6 +7,8 @@ const partySchema = new mongoose.Schema({
   date: String,
   time: String,
   location: String,
+  lat: Number, // optional map pin for the party location
+  lng: Number,
   description: String,
   music: String,
   dressCode: String,
