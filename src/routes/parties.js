@@ -29,11 +29,14 @@ router.post('/', requireAuth, async (req, res) => {
       privacy, maxPeople, invitedIds, photo, photoPosition, goingIds: [req.userId],
     });
     // Every community party gets its own group chat, created right
-    // alongside it (host-only to start) — people land in it automatically
-    // as they RSVP going (see /:id/join below), rather than the host having
-    // to build the group by hand afterward.
+    // alongside it — the host plus everyone invited up front, so people can
+    // actually start coordinating before anyone's formally RSVP'd. Anyone
+    // who RSVPs going later (see /:id/join below) gets folded in too, which
+    // matters for people who join via the public discover feed rather than
+    // a direct invite.
+    const initialMemberIds = Array.from(new Set([req.userId, ...(Array.isArray(invitedIds) ? invitedIds : [])]));
     const conversation = await Conversation.create({
-      _id: `convo-party-${id}`, type: 'group', name: party.name, memberIds: [req.userId], partyId: id,
+      _id: `convo-party-${id}`, type: 'group', name: party.name, memberIds: initialMemberIds, partyId: id,
     });
     party.conversationId = conversation._id;
     await party.save();
@@ -56,6 +59,12 @@ router.patch('/:id', requireAuth, async (req, res) => {
     if (req.body && req.body[key] !== undefined) party[key] = req.body[key];
   }
   await party.save();
+  // Newly-invited people should land in the party's group chat right away,
+  // same as at creation time — not just once they RSVP going. $addToSet
+  // makes this safe to call every save regardless of who was already in it.
+  if (party.conversationId && Array.isArray(party.invitedIds) && party.invitedIds.length > 0) {
+    await Conversation.updateOne({ _id: party.conversationId }, { $addToSet: { memberIds: { $each: party.invitedIds } } });
+  }
   res.json(serialize(party));
 });
 
