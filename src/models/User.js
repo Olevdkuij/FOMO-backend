@@ -28,6 +28,13 @@ const userSchema = new mongoose.Schema(
       reviews: { type: Number, default: 0 },
     },
     favouriteVenueIds: { type: [String], default: [] },
+    // "Going out tonight?" status shown on the Home screen. goingOutDate is
+    // a client-computed nightlife-day key (utils/nightlife.ts isoDate(nightlifeToday()),
+    // e.g. "2026-09-02") rather than a server timestamp, so the frontend can
+    // decide "is this still current" itself without any timezone guessing —
+    // a goingOut:true from a stale date just renders as "No plans yet!".
+    goingOut: { type: Boolean, default: false },
+    goingOutDate: { type: String, default: null },
     // Registered APNs device tokens for real push notifications (lock-screen
     // alerts) — a person can have more than one (old phone + new phone).
     deviceTokens: { type: [String], default: [] },

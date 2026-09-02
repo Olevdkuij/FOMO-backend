@@ -9,7 +9,7 @@ const { sendPushToUser } = require('../utils/push');
 const router = express.Router();
 
 function publicUser(u) {
-  return { id: u._id, name: u.name, handle: u.handle, avatar: u.avatar, avatarImage: u.avatarImage, bio: u.bio };
+  return { id: u._id, name: u.name, handle: u.handle, avatar: u.avatar, avatarImage: u.avatarImage, bio: u.bio, goingOut: u.goingOut, goingOutDate: u.goingOutDate };
 }
 
 // POST /api/follows/:userId — toggle follow. 404s if the target isn't a real

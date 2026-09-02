@@ -105,9 +105,9 @@ router.get('/me', requireAuth, async (req, res) => {
   res.json(serializeUser(user));
 });
 
-// PATCH /api/auth/me  { name?, handle?, bio?, city?, genres?, avatarImage? }
+// PATCH /api/auth/me  { name?, handle?, bio?, city?, genres?, avatarImage?, goingOut?, goingOutDate? }
 router.patch('/me', requireAuth, async (req, res) => {
-  const allowed = ['name', 'handle', 'bio', 'city', 'genres', 'avatarImage', 'onboardingComplete'];
+  const allowed = ['name', 'handle', 'bio', 'city', 'genres', 'avatarImage', 'onboardingComplete', 'goingOut', 'goingOutDate'];
   const updates = {};
   for (const key of allowed) {
     if (req.body && req.body[key] !== undefined) updates[key] = req.body[key];
