@@ -1,7 +1,9 @@
 const express = require('express');
 const NightRecap = require('../models/NightRecap');
+const User = require('../models/User');
 const { requireAuth } = require('../middleware/auth');
 const { createNotification } = require('../utils/notify');
+const { sendPushToUser } = require('../utils/push');
 
 const router = express.Router();
 
@@ -63,6 +65,12 @@ router.post('/:id/like', requireAuth, async (req, res) => {
     recap.likedBy.push(req.userId);
     recap.likes += 1;
     createNotification({ userId: recap.userId, type: 'like_recap', actorId: req.userId, targetId: recap._id });
+    const liker = await User.findById(req.userId);
+    sendPushToUser(User, recap.userId, {
+      title: 'FOMO',
+      body: `${liker ? liker.name : 'Someone'} liked your recap`,
+      data: { type: 'like_recap', actorId: req.userId, targetId: String(recap._id) },
+    });
   }
   await recap.save();
   res.json(serialize(recap));

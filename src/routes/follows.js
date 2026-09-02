@@ -4,6 +4,7 @@ const Block = require('../models/Block');
 const User = require('../models/User');
 const { requireAuth } = require('../middleware/auth');
 const { createNotification } = require('../utils/notify');
+const { sendPushToUser } = require('../utils/push');
 
 const router = express.Router();
 
@@ -36,6 +37,12 @@ router.post('/:userId', requireAuth, async (req, res) => {
   try {
     await Follow.create({ followerId: req.userId, followingId: targetId });
     createNotification({ userId: targetId, type: 'follow', actorId: req.userId });
+    const follower = await User.findById(req.userId);
+    sendPushToUser(User, targetId, {
+      title: 'FOMO',
+      body: `${follower ? follower.name : 'Someone'} started following you`,
+      data: { type: 'follow', actorId: req.userId },
+    });
     res.json({ following: true });
   } catch (err) {
     if (err && err.code === 11000) return res.json({ following: true }); // already following, race-safe

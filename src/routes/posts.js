@@ -1,7 +1,9 @@
 const express = require('express');
 const Post = require('../models/Post');
+const User = require('../models/User');
 const { requireAuth } = require('../middleware/auth');
 const { createNotification } = require('../utils/notify');
+const { sendPushToUser } = require('../utils/push');
 
 const router = express.Router();
 
@@ -60,6 +62,12 @@ router.post('/:id/like', requireAuth, async (req, res) => {
     post.likedBy.push(req.userId);
     post.likes += 1;
     createNotification({ userId: post.userId, type: 'like_post', actorId: req.userId, targetId: post._id });
+    const liker = await User.findById(req.userId);
+    sendPushToUser(User, post.userId, {
+      title: 'FOMO',
+      body: `${liker ? liker.name : 'Someone'} liked your post`,
+      data: { type: 'like_post', actorId: req.userId, targetId: String(post._id) },
+    });
   }
   await post.save();
   res.json(serialize(post));
