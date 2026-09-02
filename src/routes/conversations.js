@@ -9,7 +9,10 @@ const { sendPushToUser } = require('../utils/push');
 const router = express.Router();
 
 function serializeConvo(c, lastMessage) {
-  const obj = c.toObject();
+  // flattenMaps turns the lastRead Map into a plain { userId: isoDate }
+  // object — Maps don't survive JSON.stringify (res.json) as anything
+  // useful otherwise.
+  const obj = c.toObject({ flattenMaps: true });
   return { ...obj, id: obj._id, lastMessage: lastMessage || null };
 }
 function serializeMessage(m) {
@@ -62,14 +65,22 @@ router.post('/', requireAuth, async (req, res) => {
   res.status(201).json(serializeConvo(convo));
 });
 
-// GET /api/conversations/:id/messages — full history, oldest first. Members
-// only.
+// GET /api/conversations/:id/messages — full history, oldest first, plus
+// this conversation's read receipts. Members only.
+//
+// Fetching this also marks the caller as having read up to now — the
+// frontend calls this both when a chat is opened and on an 8s poll while
+// it stays on screen (see ConversationChat.tsx), so that's a reliable
+// enough proxy for "has seen everything currently in the thread" without
+// needing a separate mark-as-read endpoint.
 router.get('/:id/messages', requireAuth, async (req, res) => {
   const convo = await Conversation.findById(req.params.id);
   if (!convo) return res.status(404).json({ error: 'Conversation not found' });
   if (!convo.memberIds.includes(req.userId)) return res.status(403).json({ error: 'Not a member of this conversation' });
   const messages = await Message.find({ conversationId: req.params.id }).sort({ createdAt: 1 });
-  res.json(messages.map(serializeMessage));
+  convo.lastRead.set(req.userId, new Date());
+  await convo.save();
+  res.json({ messages: messages.map(serializeMessage), lastRead: Object.fromEntries(convo.lastRead) });
 });
 
 // POST /api/conversations/:id/messages — send a message. Body carries the
